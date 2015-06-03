@@ -33,7 +33,7 @@ class Lock
 
             if Registry::isRegistered("my_memcached_config") {
                 let config = Registry::get("my_memcached_config");
-            } else if isset _SERVER["MEMCACHED_SERVER"] {
+            } elseif isset _SERVER["MEMCACHED_SERVER"] {
 				let config = _SERVER["MEMCACHED_SERVER"];
 			} else {
 				let config = "tcp://127.0.0.1:11211/?weight=20";
