@@ -7,7 +7,7 @@ class Client
 	 */
 	public static function init(array! servers,array! options = null) {
 		if empty servers {
-			throw new \Exception("请设定正确的服务器地址");
+			throw new \Exception("please setting mongodb server information");
 		}
 
         let servers = shuffle(servers);
@@ -25,7 +25,7 @@ class Client
                 connect->{"setReadPreference"}(readPreference); 
             }
         } else {
-            throw new \Exception("请安装PHP的Mongo1.4+版本的扩展");
+            throw new \Exception("please install php_mongodb 1.4+");
         }
 
         return connect;

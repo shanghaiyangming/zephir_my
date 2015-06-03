@@ -109,7 +109,6 @@ class Lock
         return this->_isLocked;
     }
 
-
     public function release()
     {
         return self::_cache->delete(this->_key);

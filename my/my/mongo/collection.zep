@@ -36,30 +36,30 @@ class Collection
     private _fs = null;
 
     private _queryHaystack = [
-		"and",
-		"or",
-		"nor",
-		"not",
-		"where"
+		"$and",
+		"$or",
+		"$nor",
+		"$not",
+		"$where"
 	];
 
     private _updateHaystack = [
-    	"set",
-        "inc",
-        "unset",
-        "rename",
-        "setOnInsert",
-        "addToSet",
-        "pop",
-        "pullAll",
-        "pull",
-        "pushAll",
-        "push",
-        "each",
-        "slice",
-        "sort",
-        "bit",
-        "isolated"
+    	"$set",
+        "$inc",
+        "$unset",
+        "$rename",
+        "$setOnInsert",
+        "$addToSet",
+        "$pop",
+        "$pullAll",
+        "$pull",
+        "$pushAll",
+        "$push",
+        "$each",
+        "$slice",
+        "$sort",
+        "$bit",
+        "$isolated"
     ];
 
     private _noAppendQuery = false {
@@ -783,6 +783,12 @@ class Collection
         
         if empty obj {
             throw new \Exception("object is empty");
+        }
+
+        var objlock;
+        let objlock = new \My\Utils\Lock(md5(this->_collectionName.this->_databaseName.this->_clusterName."update".serialize(criteria).serialize(obj).serialize(options)));
+        if objlock->lock() {
+            return false;
         }
         
         var key,keys,defaultOptions;
