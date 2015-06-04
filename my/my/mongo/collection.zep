@@ -93,7 +93,7 @@ class Collection
 	public function setMongoClient(<\MongoClient> client) -> boolean
 	{
 		let this->_client = client;
-		this->initDB();
+		this->initCollection();
 		return true;
 	}
 
@@ -312,7 +312,10 @@ class Collection
             }
         }
         
-        return this->_collection->aggregate(pipeline);
+        var rst;
+        let rst = this->_collection->aggregate(pipeline);
+        return rst;
+
     }
 
     /**
@@ -320,7 +323,7 @@ class Collection
      *
      * @see MongoCollection::batchInsert()
      */
-    public function batchInsert(array! documents, array options = NULL)
+    public function batchInsert(array! documents, array options = null)
     {
         var row;
         for row in documents {
@@ -328,7 +331,10 @@ class Collection
             let row["__MODIFY_TIME__"] = new \MongoDate();
             let row["__REMOVED__"] = false;
         };
-        return this->_collection->batchInsert(documents, options);
+
+        var rst;
+        let rst = this->_collection->batchInsert(documents, options);
+        return rst;
     }
 
     /**
@@ -336,10 +342,12 @@ class Collection
      *
      * @see MongoCollection::count()
      */
-    public function count(array! query = NULL, limit = NULL, skip = NULL)
+    public function count(array! query = null, limit = null, skip = null)
     {
         let query = this->appendQuery(query);
-        return this->_collection->count(query, limit, skip);
+        var rst;
+        let rst = this->_collection->count(query, limit, skip);
+        return rst;
     }
 
     /**
@@ -351,7 +359,9 @@ class Collection
     public function distinct(string! key, array! query = null)
     {
         let query = this->appendQuery(query);
-        return this->_collection->distinct(key, query);
+        var rst;
+        let rst = this->_collection->distinct(key, query);
+        return rst;
     }
 
 
@@ -381,7 +391,10 @@ class Collection
                 "w" : 0
             ]);
         }
-        return this->_collection->drop();
+
+        var rst;
+        let rst = this->_collection->drop();
+        return rst;
     }
 
     /**
@@ -389,7 +402,9 @@ class Collection
      */
     public function physicalDrop()
     {
-        return this->_collection->drop();
+        var rst;
+        let rst = this->_collection->drop();
+        return rst;
     }
 
         /**
@@ -397,9 +412,11 @@ class Collection
      *
      * @see MongoCollection::ensureIndex()
      */
-    public function ensureIndex(array! keys, array! options = NULL)
+    public function ensureIndex(array! keys, array! options = null)
     {
-        return this->createIndex(keys, options);
+        var rst;
+        let rst = this->createIndex(keys, options);
+        return rst;
     }
 
     /**
@@ -408,7 +425,7 @@ class Collection
      * @param array keys            
      * @param array options            
      */
-    public function createIndex(array! keys, array! options = NULL)
+    public function createIndex(array! keys, array! options = null)
     {
         if unlikely this->checkIndexExist(keys) == true {
             return true;
@@ -417,12 +434,14 @@ class Collection
         let defaultOptions = [];
         let defaultOptions["background"] = true;
         let defaultOptions["w"] = 0;
-        let options = (options === NULL) ? defaultOptions : array_merge(defaultOptions, options);
+        let options = (options === null) ? defaultOptions : array_merge(defaultOptions, options);
+        var rst;
         if version_compare(\MongoClient::VERSION, "1.5.0", ">=") {
-            return this->_collection->createIndex(keys, options);
+            let rst = this->_collection->createIndex(keys, options);
         } else {
-            return this->_collection->ensureIndex(keys, options);
+            let rst = this->_collection->ensureIndex(keys, options);
         }
+        return rst;
     }
 
     /**
@@ -451,11 +470,13 @@ class Collection
      *
      * @see MongoCollection::find()
      */
-    public function find(array! query = NULL, array! fields = NULL)
+    public function find(array! query = null, array! fields=[]) -> <\MongoCursor>
     {
+        var rst;
         let fields = empty(fields) ? [] : fields;
         let query = this->appendQuery(query);
-        return this->_collection->find(query, fields);
+        let rst = this->_collection->find(query,fields);
+        return rst;
     }
 
     /**
@@ -463,11 +484,13 @@ class Collection
      *
      * @see MongoCollection::findOne()
      */
-    public function findOne(array! query = NULL, array! fields = NULL)
+    public function findOne(array! query = null, array! fields = [])
     {
+        var rst;
         let fields = empty(fields) ? [] : fields;
         let query = this->appendQuery(query);
-        return this->_collection->findOne(query, fields);
+        let rst = this->_collection->findOne(query,fields);
+        return rst;
     }
 
     /**
@@ -480,7 +503,7 @@ class Collection
      * @param array fields            
      * @return array
      */
-    public function findAll(array! query = [], array! sort = ["natural":1], int skip = 0, int limit = 0, array! fields = []) -> array
+    public function findAll(array! query = [], array! sort = ["_id":1], int skip = 0, int limit = 0, array! fields = []) -> array
     {
         let fields = empty(fields) ? [] : fields;
         var cursor;
@@ -520,7 +543,7 @@ class Collection
      * @param array options            
      * @return array
      */
-    public function findAndModify(array! query, array! update = NULL, array! fields = NULL, array! options = NULL)
+    public function findAndModify(array! query, array! update = null, array! fields = null, array! options = null)
     {
         let query = this->appendQuery(query);
         if this->_collection->count(query) == 0 && !empty options["upsert"] {
@@ -528,7 +551,9 @@ class Collection
         } else {
             unset(options["upsert"]);
         }
-        return this->_collection->findAndModify(query, update, fields, options);
+        var rst;
+        let rst = this->_collection->findAndModify(query, update, fields, options);
+        return rst;
     }
 
     /**
@@ -539,11 +564,11 @@ class Collection
      * @param string collection            
      * @return mixed array|null
      */
-    public function findAndModifyByCommand(array! option, array! collection = NULL)
+    public function findAndModifyByCommand(array! option, array! collection = null)
     {
         var cmd,targetCollection;
         let cmd = [];
-        let targetCollection = collection === NULL ? this->_collection : collection;
+        let targetCollection = collection === null ? this->_collection : collection;
         let cmd["findandmodify"] = targetCollection;
         if isset option["query"] {
             let cmd["query"] = this->appendQuery(option["query"]);
@@ -571,7 +596,10 @@ class Collection
         } else {
             unset(cmd["upsert"]);
         }
-        return this->_db->command(cmd);
+
+        var rst;
+        let rst = this->_db->command(cmd);
+        return rst;
     }
 
     /**
@@ -580,34 +608,34 @@ class Collection
      * @param array object            
      * @param array options            
      */
-    public function insertRef(a, array! options = NULL)
+    public function insertRef(a, array! options = null)
     {
-        var res;
-        let res = this->insertByFindAndModify(a);
-        if isset res["ok"] {
+        var rst;
+        let rst = this->insertByFindAndModify(a);
+        if isset rst["ok"] {
             return false;
         }
-        return res;
+        return rst;
     }
 
     /**
      * 插入特定的数据，注意此方法無法針對a添加_id属性，详见参数丢失原因的文档说明
      * 解决这个问题，请使用上面的方法insertRef
      * 注意因为参数检查的原因，无法直接覆盖insert方法并采用引用，如下原因
-     * <b>Strict Standards</b>: Declaration of My\Common\MongoCollection::insert() should be compatible with MongoCollection::insert(array_of_fields_OR_object, array options = NULL)
+     * <b>Strict Standards</b>: Declaration of My\Common\MongoCollection::insert() should be compatible with MongoCollection::insert(array_of_fields_OR_object, array options = null)
      *
      * @param array object            
      * @param array options            
      */
-    public function insert(array! a, array! options = NULL)
+    public function insert(array! a, array! options = null)
     {
         if empty(a) {
-            throw new \Exception("object is NULL");
+            throw new \Exception("object is null");
         }
         
         var defaultOptions = [];
         let defaultOptions["fsync"] = self::FSYNC;
-        let options = (options === NULL) ? defaultOptions : array_merge(defaultOptions, options);
+        let options = (options === null) ? defaultOptions : array_merge(defaultOptions, options);
         
         let a = this->array_unset_recursive(a, [
             "__CREATE_TIME__",
@@ -627,7 +655,9 @@ class Collection
             let a["__REMOVED__"] = false;
         }
         
-        return this->_collection->insert(a, options);
+        var rst;
+        let rst = this->_collection->insert(a, options);
+        return rst;
     }
 
     /**
@@ -641,7 +671,7 @@ class Collection
     public function insertByFindAndModify(a)
     {
         if empty a {
-            throw new \Exception("a is NULL");
+            throw new \Exception("a is null");
         }
 
         var query,fields,options;
@@ -675,7 +705,9 @@ class Collection
             "upsert" : true
         ];
         
-        return this->_collection->findAndModify(query, a, fields, options);
+        var rst;
+        let rst = this->_collection->findAndModify(query, a, fields, options);
+        return rst;
     }
 
     /**
@@ -684,10 +716,10 @@ class Collection
      * @param array criteria            
      * @param array options            
      */
-    public function remove(array! criteria = NULL, array! options = NULL)
+    public function remove(array! criteria = null, array! options = null)
     {
-        if criteria === NULL {
-            throw new \Exception("criteria is NULL");
+        if criteria === null {
+            throw new \Exception("criteria is null");
         }
         
         var defaultOptions = [];
@@ -696,18 +728,20 @@ class Collection
             "fsync" : self::FSYNC
         ];
         
-        let options = (options === NULL) ? defaultOptions : array_merge(defaultOptions, options);
+        let options = (options === null) ? defaultOptions : array_merge(defaultOptions, options);
         
         if isset options["justOne"] && !options["justOne"] {
             let options["multiple"] = true;
         }
         
         let criteria = this->appendQuery(criteria);
-        return this->_collection->update(criteria, [
-            "set" : [
+        var rst;
+        let rst = this->_collection->update(criteria, [
+            "$set" : [
                 "__REMOVED__" : true
             ]
         ], options);
+        return rst;
     }
 
     /**
@@ -716,10 +750,10 @@ class Collection
      * @param array criteria            
      * @param array options            
      */
-    public function physicalRemove(array! criteria = NULL, array options = NULL)
+    public function physicalRemove(array! criteria = null, array options = null)
     {
-        if criteria === NULL {
-            throw new \Exception("criteria is NULL");
+        if criteria === null {
+            throw new \Exception("criteria is null");
         }
         
         var defaultOptions = [];
@@ -728,8 +762,10 @@ class Collection
             "fsync" : self::FSYNC
         ];
         
-        let options = (options === NULL) ? defaultOptions : array_merge(defaultOptions, options);
-        return this->_collection->remove(criteria, options);
+        let options = (options === null) ? defaultOptions : array_merge(defaultOptions, options);
+        var rst;
+        let rst = this->_collection->remove(criteria, options);
+        return rst;
     }
 
     /**
@@ -740,7 +776,7 @@ class Collection
      * @param array options            
      * @throws \Exception
      */
-    public function physicalUpdate(criteria, obj, array options = NULL)
+    public function physicalUpdate(criteria, obj, array options = null)
     {
         if !is_array(criteria) {
             throw new \Exception("criteria is array");
@@ -764,8 +800,10 @@ class Collection
             "fsync" : self::FSYNC
         ];
         
-        let options = (options === NULL) ? defaultOptions : array_merge(defaultOptions, options);
-        return this->_collection->update(criteria, obj, options);
+        let options = (options === null) ? defaultOptions : array_merge(defaultOptions, options);
+        var rst;
+        let rst = this->_collection->update(criteria, obj, options);
+        return rst;
     }
 
     /**
@@ -775,7 +813,7 @@ class Collection
      * @param array object            
      * @param array options            
      */
-    public function update(criteria, obj, array options = NULL)
+    public function update(criteria, obj, array options = null)
     {
         if !is_array(criteria) {
             throw new \Exception("criteria is array");
@@ -804,7 +842,7 @@ class Collection
             "fsync" : self::FSYNC
         ];
         
-        let options = (options === NULL) ? defaultOptions : array_merge(defaultOptions, options);
+        let options = (options === null) ? defaultOptions : array_merge(defaultOptions, options);
         
         let criteria = this->appendQuery(criteria);
         let obj = this->array_unset_recursive(obj, [
@@ -817,7 +855,7 @@ class Collection
             if isset options["upsert"] && options["upsert"] {
                 let criteria = this->addSharedKeyToQuery(criteria);
                 this->_collection->update(criteria, [
-                    "set" : [
+                    "$set" : [
                         "__CREATE_TIME__" : new \MongoDate(),
                         "__MODIFY_TIME__" : new \MongoDate(),
                         "__REMOVED__" : false
@@ -827,13 +865,15 @@ class Collection
         } else {
             unset(options["upsert"]);
             this->_collection->update(criteria, [
-                "set" : [
+                "$set" : [
                     "__MODIFY_TIME__" : new \MongoDate()
                 ]
             ], options);
         }
         
-        return this->_collection->update(criteria, obj, options);
+        var rst;
+        let rst = this->_collection->update(criteria, obj, options);
+        return rst;
     }
 
     /**
@@ -843,7 +883,7 @@ class Collection
      * @param array options            
      * @return mixed
      */
-    public function save(array! a, array! options = NULL)
+    public function save(array! a, array! options = null)
     {
         if !isset a["__CREATE_TIME__"] {
             let a["__CREATE_TIME__"] = new \MongoDate();
@@ -855,7 +895,9 @@ class Collection
                 "w" : 1
             ];
         }
-        return this->_collection->save(a, options);
+        var rst;
+        let rst = this->_collection->save(a, options);
+        return rst;
     }
 
     /**
@@ -865,9 +907,11 @@ class Collection
      * @param array options            
      * @return mixed
      */
-    public function saveRef(array! a, array options = NULL)
+    public function saveRef(array! a, array options = null)
     {
-        return this->save(a, options);
+        var rst;
+        let rst = this->save(a, options);
+        return rst;
     }
 
     /**
@@ -878,7 +922,9 @@ class Collection
      */
     public function command(array! command)
     {
-        return this->_collection->db->command(command);
+        var rst;
+        let rst = this->_collection->db->command(command);
+        return rst;
     }
 
     /**
@@ -963,7 +1009,8 @@ class Collection
             outMongoCollection->setNoAppendQuery(true);
             return outMongoCollection;
         } else {
-            return this->failure(501, rst);
+            let rst = this->failure(501, rst);
+            return rst;
         }
     }
 
@@ -983,7 +1030,7 @@ class Collection
      *         "537cc9b54896194b228b4581"
      *         )
      *         ["collection_id"] :
-     *         NULL
+     *         null
      *         ["name"] :
      *         "b21c8701a18b87d624ac8e2d050828381f30fd11.jpg"
      *         ["type"] :
@@ -1040,7 +1087,9 @@ class Collection
             throw new \Exception("gridfsFile is not instanceof MongoGridFSFile");
         }
         
-        return gridfsFile->file;
+        var rst;
+        let rst = gridfsFile->file;
+        return rst;
     }
 
     /**
@@ -1070,7 +1119,9 @@ class Collection
         this->initGridFS();
         let id = this->_fs->storeBytes(bytes, metadata);
         let gridfsFile = this->_fs->get(id);
-        return gridfsFile->file;
+        var rst;
+        let rst = gridfsFile->file;
+        return rst;
     }
 
     /**
@@ -1086,7 +1137,9 @@ class Collection
         }
         
         this->initGridFS();
-        return this->_fs->get(id);
+        var rst;
+        let rst = this->_fs->get(id);
+        return rst;
     }
 
     /**
@@ -1137,7 +1190,9 @@ class Collection
         }
         this->initGridFS();
         let gridfsFile = this->_fs->get(id);
-        return gridfsFile->file;
+        var rst;
+        let rst = gridfsFile->file;
+        return rst;
     }
 
     /**
@@ -1155,7 +1210,9 @@ class Collection
         this->initGridFS();
         let gridfsFile = this->_fs->get(id);
         if gridfsFile instanceof \MongoGridFSFile {
-            return gridfsFile->getBytes();
+            var rst;
+            let rst = gridfsFile->getBytes();
+            return rst;
         } else {
             return false;
         }
@@ -1174,9 +1231,11 @@ class Collection
             let id = new \MongoId(id);
         }
         this->initGridFS();
-        return this->_fs->remove([
+        var rst;
+        let rst = this->_fs->remove([
             "_id" : id
         ]);
+        return rst;
     }
 
 

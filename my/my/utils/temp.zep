@@ -24,13 +24,14 @@ class Temp
 
     public function __construct(url)
     {
-        var context,opts;
+        var context = null,
+            opts;
         if filter_var(url, FILTER_VALIDATE_URL) {
             let opts = [
                 "http" : [
                     "follow_location" : 3,
                     "max_redirects" : 3,
-                    "timeout" : 10,
+                    "timeout" : 5,
                     "method" : "GET",
                     "header" : "Connection: close\r\n",
                     "user_agent" : "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
