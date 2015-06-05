@@ -4,7 +4,6 @@ class Collection
 {
 	private _client = null;
 
- 	//集合操作对象
 	private _collection {
 		set, get
 	};
@@ -166,10 +165,6 @@ class Collection
 		}
 	}
 
-	/**
-	 * 添加查询扩展参数__REMOVED__ 
-     *
-     */
 	private function appendQuery(array! query = null)
     {
         if empty query {
@@ -203,14 +198,6 @@ class Collection
         return query;
     }
 
-
-    /**
-     * 检查某个数组中，是否包含某个键
-     *
-     * @param array array            
-     * @param array keys            
-     * @return boolean
-     */
     private function checkKeyExistInArray(array! arr, keys) -> boolean
     {
         if typeof keys == "string" {
@@ -235,12 +222,6 @@ class Collection
         return false;
     }
 
-    /**
-     * ICC采用_id自动分片机制，故需要判断是否增加片键字段，用于分片集合update数据时使用upsert:true的情况
-     *
-     * @param array query            
-     * @return multitype: Ambigous multitype:\MongoId >
-     */
     private function addSharedKeyToQuery(array query = null) -> array
     {
         if typeof query != "array" {
@@ -272,22 +253,11 @@ class Collection
         return query;
     }
 
-     /**
-     * 处理检索条件
-     *
-     * @param string text            
-     */
     private function search(string text) -> <\MongoRegex>
     {
         return new \MongoRegex("/" . preg_replace("/[\s\r\t\n]/", ".*", text) . "/i");
     }
 
-
-    /**
-     * aggregate框架指令达成
-     *
-     * @return mixed
-     */
     public function aggregate(pipeline)
     {
         if empty this->_noAppendQuery {
@@ -318,11 +288,6 @@ class Collection
 
     }
 
-    /**
-     * 批量插入数据
-     *
-     * @see MongoCollection::batchInsert()
-     */
     public function batchInsert(array! documents, array options = null)
     {
         var row;
@@ -337,11 +302,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 统计符合条件的数量
-     *
-     * @see MongoCollection::count()
-     */
     public function count(array! query = null, limit = null, skip = null)
     {
         let query = this->appendQuery(query);
@@ -350,12 +310,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 根据指定字段
-     *
-     * @param string key            
-     * @param array query            
-     */
     public function distinct(string! key, array! query = null)
     {
         let query = this->appendQuery(query);
@@ -364,24 +318,12 @@ class Collection
         return rst;
     }
 
-
-    /**
-     * 直接禁止drop操作,注意备份表中只包含当前集合中的有效数据，__REMOVED__为true的不在此列
-     *
-     * 仅适合数据量操作能在脚本生命周期内能够完成的
-     *
-     * @see MongoCollection::drop()
-     */
     public function drop()
     {
-        // 做法1：抛出异常禁止Drop操作
-        // throw new \Exception("ICC deny execute "drop()" collection operation");
-        // 做法2：复制整个集合的数据到新的集合中，用于备份，备份数据不做片键，不做索引以便节约空间，仅出于安全考虑，原有_id使用保留字__OLD_ID__进行保留
         var targetCollection,target,cursor,row;
         let targetCollection = "bak_" . date("YmdHis") . "_" . this->_collectionName;
         this->initBackup();
         let target = new \MongoCollection(this->_backup, targetCollection);
-        // 变更为重命名某个集合或者复制某个集合的操作作为替代。
         let cursor = this->find([]);
         while (cursor->hasNext()) {
             let row = cursor->getNext();
@@ -397,9 +339,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 物理删除数据集合
-     */
     public function physicalDrop()
     {
         var rst;
@@ -407,11 +346,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 新驱动已经抛弃了该方法，但是为了保持一致性，继续支持，但是不建议采用
-     *
-     * @see MongoCollection::ensureIndex()
-     */
     public function ensureIndex(array! keys, array! options = null)
     {
         var rst;
@@ -419,12 +353,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 新的写法，创建索引
-     *
-     * @param array keys            
-     * @param array options            
-     */
     public function createIndex(array! keys, array! options = null)
     {
         if unlikely this->checkIndexExist(keys) == true {
@@ -458,12 +386,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 检测集合的某个索引是否存在
-     *
-     * @param array keys            
-     * @return boolean
-     */
     public function checkIndexExist(array! keys) ->boolean
     {
         var indexes,index;
@@ -478,12 +400,6 @@ class Collection
         return false;
     }
 
-
-    /**
-     * 查询符合条件的项目，自动排除__REMOVED__:true的结果集
-     *
-     * @see MongoCollection::find()
-     */
     public function find(array! query = null, array! fields = [])
     {
         //var rst;
@@ -493,11 +409,6 @@ class Collection
         //return rst;
     }
 
-    /**
-     * 查询符合条件的一条数据
-     *
-     * @see MongoCollection::findOne()
-     */
     public function findOne(array! query = null, array! fields = [])
     {
         var rst;
@@ -507,16 +418,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 获取符合条件的全部数据
-     *
-     * @param array query            
-     * @param array sort            
-     * @param int skip            
-     * @param int limit            
-     * @param array fields            
-     * @return array
-     */
     public function findAll(array! query = [], array! sort = ["_id":1], int skip = 0, int limit = 0, array! fields = []) -> array
     {
         let fields = empty(fields) ? [] : fields;
@@ -547,16 +448,6 @@ class Collection
         return [];
     }
 
-    /**
-     * findAndModify操作
-     * 特别注意：__REMOVED__ __MODIFY_TIME__ __CREATE_TIME__ 3个系统保留变量在update参数中的使用
-     *
-     * @param array query            
-     * @param array update            
-     * @param array fields            
-     * @param array options            
-     * @return array
-     */
     public function findAndModify(array! query, array! update = null, array! fields = null, array! options = null)
     {
         let query = this->appendQuery(query);
@@ -570,14 +461,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 增加findAndModify方法
-     * 特别注意：__REMOVED__ __MODIFY_TIME__ __CREATE_TIME__ 3个系统保留变量在update参数中的使用
-     *
-     * @param array option            
-     * @param string collection            
-     * @return mixed array|null
-     */
     public function findAndModifyByCommand(array! option, array! collection = null)
     {
         var cmd,targetCollection;
@@ -616,11 +499,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 插入特定的数据,并保持insert第一个参数a在没有_id的时候添加_id属性
-     *
-     * @param array object                    
-     */
     public function insertRef(array! a, array! options = null)
     {
         var rst;
@@ -631,15 +509,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 插入特定的数据，注意此方法無法針對a添加_id属性，详见参数丢失原因的文档说明
-     * 解决这个问题，请使用上面的方法insertRef
-     * 注意因为参数检查的原因，无法直接覆盖insert方法并采用引用，如下原因
-     * <b>Strict Standards</b>: Declaration of My\Common\MongoCollection::insert() should be compatible with MongoCollection::insert(array_of_fields_OR_object, array options = null)
-     *
-     * @param array object            
-     * @param array options            
-     */
     public function insert(array! a, array! options = null)
     {
         if empty(a) {
@@ -673,14 +542,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 通过findAndModify的方式，插入数据。
-     * 这样可以使用a["a.b"]的方式插入结构为{a:{b:xxx}}的数据,这是insert所不能办到的
-     * 采用update也可以实现类似的效果，区别在于findAndModify可以返回插入之后的新数据，更接近insert的原始行为
-     *
-     * @param array a            
-     * @return array
-     */
     public function insertByFindAndModify(a)
     {
         if empty a {
@@ -724,12 +585,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 删除指定范围的数据
-     *
-     * @param array criteria            
-     * @param array options            
-     */
     public function remove(array! criteria = null, array! options = null)
     {
         if criteria === null {
@@ -758,12 +613,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 物理删除指定范围的数据
-     *
-     * @param array criteria            
-     * @param array options            
-     */
     public function physicalRemove(array! criteria = null, array options = null)
     {
         if criteria === null {
@@ -782,14 +631,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 物理更新数据
-     *
-     * @param array criteria            
-     * @param array object            
-     * @param array options            
-     * @throws \Exception
-     */
     public function physicalUpdate(criteria, obj, array options = null)
     {
         if !is_array(criteria) {
@@ -820,13 +661,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 更新指定范围的数据
-     *
-     * @param array criteria            
-     * @param array object            
-     * @param array options            
-     */
     public function update(criteria, obj, array options = null)
     {
         if !is_array(criteria) {
@@ -891,41 +725,28 @@ class Collection
         return rst;
     }
 
-    /**
-     * 保存并保持引用修改状态
-     *
-     * @param array a            
-     * @param array options            
-     * @return mixed
-     */
     public function save(array! a, array! options = null)
+    {
+        return this->saveRef(a,options);
+    }
+
+    public function saveRef(array! a, array! options = null)
     {
         if !isset a["__CREATE_TIME__"] {
             let a["__CREATE_TIME__"] = new \MongoDate();
         }
         let a["__REMOVED__"] = false;
         let a["__MODIFY_TIME__"] = new \MongoDate();
-        if (options == null) {
-            let options = [
-                "w" : 1
-            ];
-        }
         var rst;
         let rst = this->_collection->save(a, options);
-        if isset rst["ok"] && rst["ok"] == 1 {
+        if isset rst["ok"] && rst["ok"]==1 {
             return a;
         } else {
             return rst;
         }
-
+        
     }
 
-    /**
-     * 执行DB的command操作,直接运行命令行操作数据库中的数据，慎用
-     *
-     * @param array command            
-     * @return array
-     */
     public function command(array! command)
     {
         var rst;
@@ -933,19 +754,11 @@ class Collection
         return rst;
     }
 
-    /**
-     * mapreduce 错误评价
-     *
-     */
     private function failure(int! code, string! msg) {
         if is_array(msg) {
            let msg = json_encode(msg);
         }
-        return [
-            "ok" : 0,
-            "code" : code,
-            "msg" : msg
-        ];
+
         return [
             "ok" : 0,
             "code" : code,
@@ -955,12 +768,6 @@ class Collection
         ];
     }
 
-    /**
-     * 执行map reduce操作,为了防止数据量过大，导致无法完成mapreduce,统一采用集合的方式，取代内存方式
-     * 内存方式，不允许执行过程的数据量量超过物理内存的10%，故无法进行大数量分析工作。
-     *
-     * @param array command            
-     */
     public function mapReduce(string out = null, map, reduce, array! query = [], finalize = null, string! method = "replace", scope = null, sort = null, limit = null)
     {
         var arrArgs, rst, command, objlock, outMongoCollection;
@@ -1031,54 +838,6 @@ class Collection
         }
     }
 
-    /**
-     * 云存储文件
-     *
-     * @param string fieldName
-     *            上传表单字段的名称
-     * @return array 返回上传文件成功后的object
-     *        
-     *         object结构如下:
-     *         array(
-     *         ["_id"] :
-     *         MongoId(
-     *        
-     *         id =
-     *         "537cc9b54896194b228b4581"
-     *         )
-     *         ["collection_id"] :
-     *         null
-     *         ["name"] :
-     *         "b21c8701a18b87d624ac8e2d050828381f30fd11.jpg"
-     *         ["type"] :
-     *         "image/jpeg"
-     *         ["tmp_name"] :
-     *         "/tmp/phpeBS799"
-     *         ["error"] :
-     *         0
-     *         ["size"] :
-     *         350522
-     *         ["mime"] :
-     *         "image/jpeg; charset=binary"
-     *         ["filename"] :
-     *         "b21c8701a18b87d624ac8e2d050828381f30fd11.jpg"
-     *         ["uploadDate"] :
-     *         MongoDate(
-     *        
-     *         sec =
-     *         1400687029
-     *         usec =
-     *         515000
-     *         )
-     *         ["length"] :
-     *         350522
-     *         ["chunkSize"] :
-     *         262144
-     *         ["md5"] :
-     *         "3a736c4eed22030dde16df11fee263e7"
-     *         )
-     *        
-     */
     public function storeToGridFS(string! fieldName, array! metadata = [])
     {
         var finfo,mime,id,gridfsFile;
@@ -1109,13 +868,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 存储二进制内容
-     *
-     * @param bytes bytes            
-     * @param string filename            
-     * @param array metadata            
-     */
     public function storeBytesToGridFS(bytes, string! filename = "", array! metadata = [])
     {
         var finfo,mime,id,gridfsFile;
@@ -1141,12 +893,6 @@ class Collection
         return rst;
     }
 
-    /**
-     * 获取指定ID的GridFSFile对象
-     *
-     * @param string id            
-     * @return \MongoGridFSFile object
-     */
     public function getGridFsFileById(id)
     {
         if !(id instanceof \MongoId) {
@@ -1291,7 +1037,6 @@ class Collection
         if this->_db instanceof \MongoDB {
             var err;
             let err = this->_db->lastError();
-            // 在浏览器中输出错误信息以便发现问题
             return err;
         }
     }
