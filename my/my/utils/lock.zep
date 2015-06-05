@@ -14,33 +14,40 @@ class Lock
 
     private _autoUnLock = true;
 
+    private static _config;
+
 	public function __construct(string! key) -> void
 	{
+        self::checkConfig();
 		let self::_cache = self::connect();
 		let this->_key = key;
 		let this->_expire = ini_get("max_execution_time");
 	}
 
-	public static function connect() -> <\Memcached>
+    private static function checkConfig() {
+        var config;
+        if Registry::isRegistered("my_memcached_config") {
+            let config = Registry::get("my_memcached_config");
+        } elseif isset _SERVER["MEMCACHED_SERVER"] {
+            let config = _SERVER["MEMCACHED_SERVER"];
+        } else {
+            let config = "tcp://127.0.0.1:11211/?weight=20";
+        }
+        if self::_config != config {
+            let self::_cache = null;
+        }
+        let self::_config = config;
+    }
+
+	private static function connect() -> <\Memcached>
 	{
 		if empty self::_cache {
 			var servers;
-			var config;
 			var objMemcached;
 			array memcachedConfig = [];
 
 			let objMemcached = new \Memcached();
-
-            if Registry::isRegistered("my_memcached_config") {
-                let config = Registry::get("my_memcached_config");
-            } elseif isset _SERVER["MEMCACHED_SERVER"] {
-				let config = _SERVER["MEMCACHED_SERVER"];
-			} else {
-				let config = "tcp://127.0.0.1:11211/?weight=20";
-			}
-			
-
-			let servers = explode(";",config);
+			let servers = explode(";",self::_config);
 			var server;
 			for server in servers {
 				var arr,host,port;
@@ -107,6 +114,10 @@ class Lock
             let n++;
         }
         return this->_isLocked;
+    }
+
+    public function getValue() {
+        return self::_cache->get(this->_key);
     }
 
     public function release()

@@ -407,7 +407,7 @@ class Collection
         return rst;
     }
 
-        /**
+    /**
      * 新驱动已经抛弃了该方法，但是为了保持一致性，继续支持，但是不建议采用
      *
      * @see MongoCollection::ensureIndex()
@@ -444,6 +444,20 @@ class Collection
         return rst;
     }
 
+    public function deleteIndex(keys)
+    {
+        var rst;
+        let rst = this->_collection->deleteIndex(keys);
+        return rst;
+    }
+
+    public function deleteIndexes()
+    {
+        var rst;
+        let rst = this->_collection->deleteIndexes();
+        return rst;
+    }
+
     /**
      * 检测集合的某个索引是否存在
      *
@@ -470,13 +484,13 @@ class Collection
      *
      * @see MongoCollection::find()
      */
-    public function find(array! query = null, array! fields=[]) -> <\MongoCursor>
+    public function find(array! query = null, array! fields = [])
     {
-        var rst;
+        //var rst;
         let fields = empty(fields) ? [] : fields;
         let query = this->appendQuery(query);
-        let rst = this->_collection->find(query,fields);
-        return rst;
+        return this->_collection->find(query);
+        //return rst;
     }
 
     /**
@@ -605,10 +619,9 @@ class Collection
     /**
      * 插入特定的数据,并保持insert第一个参数a在没有_id的时候添加_id属性
      *
-     * @param array object            
-     * @param array options            
+     * @param array object                    
      */
-    public function insertRef(a, array! options = null)
+    public function insertRef(array! a, array! options = null)
     {
         var rst;
         let rst = this->insertByFindAndModify(a);
@@ -676,11 +689,12 @@ class Collection
 
         var query,fields,options;
         let a = this->array_unset_recursive(a, [
+            "_id",
             "__CREATE_TIME__",
             "__MODIFY_TIME__",
             "__REMOVED__"
         ]);
-        
+
         if !isset a["__CREATE_TIME__"] {
             let a["__CREATE_TIME__"] = new \MongoDate();
         }
@@ -696,9 +710,9 @@ class Collection
         let query = [
             "_id" : new \MongoId()
         ];
-        let a = [
-            "$set" : a
-        ];
+
+        var arr = [];
+        let arr["$set"] = a;
         let fields = null;
         let options = [
             "new" : true,
@@ -706,7 +720,7 @@ class Collection
         ];
         
         var rst;
-        let rst = this->_collection->findAndModify(query, a, fields, options);
+        let rst = this->findAndModify(query, arr, fields, options);
         return rst;
     }
 
@@ -846,6 +860,7 @@ class Collection
         
         let criteria = this->appendQuery(criteria);
         let obj = this->array_unset_recursive(obj, [
+            "_id",
             "__CREATE_TIME__",
             "__MODIFY_TIME__",
             "__REMOVED__"
@@ -897,21 +912,12 @@ class Collection
         }
         var rst;
         let rst = this->_collection->save(a, options);
-        return rst;
-    }
+        if isset rst["ok"] && rst["ok"] == 1 {
+            return a;
+        } else {
+            return rst;
+        }
 
-    /**
-     * 保存并保持引用修改状态
-     *
-     * @param array a            
-     * @param array options            
-     * @return mixed
-     */
-    public function saveRef(array! a, array options = null)
-    {
-        var rst;
-        let rst = this->save(a, options);
-        return rst;
     }
 
     /**
@@ -940,6 +946,13 @@ class Collection
             "code" : code,
             "msg" : msg
         ];
+        return [
+            "ok" : 0,
+            "code" : code,
+            "msg" : msg,
+            "err": msg,
+            "errmsg" : msg
+        ];
     }
 
     /**
@@ -950,14 +963,19 @@ class Collection
      */
     public function mapReduce(string out = null, map, reduce, array! query = [], finalize = null, string! method = "replace", scope = null, sort = null, limit = null)
     {
+        var arrArgs, rst, command, objlock, outMongoCollection;
         if (out == null) {
-            var arrArgs;
             let arrArgs = func_get_args();
             let out = md5(serialize(arrArgs));
         }
+
+        let objlock = new \My\Utils\Lock(out);
+        if objlock->lock() {
+            let rst = this->failure(599, "current op is locked,please wait.");
+            return rst;
+        }
     
         // map reduce执行锁管理结束
-        var command,rst;
         let command = [];
         let command["mapreduce"] = this->_collection;
         let command["map"] = (map instanceof \MongoCode) ? map : new \MongoCode(map);
@@ -1003,7 +1021,6 @@ class Collection
         let rst = this->_collection->db->command(command);
         
         if isset rst["ok"] && rst["ok"] == 1 {
-            var outMongoCollection;
             let outMongoCollection = new self(out, self::DB_MAPREDUCE, this->_clusterName);
             outMongoCollection->setMongoClient(this->_client);
             outMongoCollection->setNoAppendQuery(true);
@@ -1239,7 +1256,7 @@ class Collection
     }
 
 
-    private function array_unset_recursive(array! arr, array! fields, boolean remove = true)
+    public function array_unset_recursive(array! arr, array! fields, boolean remove = true)
     {
         var key,value;
         for key,value in arr {
@@ -1248,7 +1265,7 @@ class Collection
                     unset(arr[key]);
                 } else {
                     if is_array(value) {
-                        this->array_unset_recursive(value, fields, remove);
+                        let arr[key] = this->array_unset_recursive(value, fields, remove);
                     }
                 }
             } else {
@@ -1256,7 +1273,7 @@ class Collection
                     unset(arr[key]);
                 } else {
                     if is_array(value) {
-                        this->array_unset_recursive(value, fields, remove);
+                        let arr[key] = this->array_unset_recursive(value, fields, remove);
                     }
                 }
             }
@@ -1277,6 +1294,12 @@ class Collection
             // 在浏览器中输出错误信息以便发现问题
             return err;
         }
+    }
+
+    public function __call(string! method, arguments) {
+        var rst;
+        let rst = call_user_func_array([this->_collection,method],arguments);
+        return rst;
     }
 
     /**
