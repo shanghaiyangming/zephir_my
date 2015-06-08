@@ -93,26 +93,30 @@ class Lock
     public function lock() -> boolean
     {
         if this->_isInstance {
-            throw new \Exception("每个Lock实例只能lock一次，当一个请求中需要多次锁定时，请分别实例化Lock类");
+            throw new \Exception("Each object can be instantiated only once");
         }
         
         let this->_isInstance = true;
-        var casToken,value,expireTime,now,n;
+        var casToken,value,expireTime,now;
         let casToken = microtime(true);
-        let n = 0;
-        while n==0 || self::_cache->getResultCode() != \Memcached::RES_SUCCESS {
+        let now = time();
+        let expireTime = now + this->_expire;
+        do {
         	let value = self::_cache->get($this->_key, null, casToken);
         	if (self::_cache->getResultCode() == \Memcached::RES_NOTFOUND) {
-        		let now = time();
-                let expireTime = now + this->_expire;
                 self::_cache->add(this->_key, expireTime, expireTime);
                 let this->_isLocked = false;
             } else {
-                self::_cache->cas(casToken, this->_key, value, value);
-                let this->_isLocked = true;
+                if now > value {
+                    self::_cache->delete(this->_key);
+                    self::_cache->add(this->_key, expireTime, expireTime);
+                    let this->_isLocked = false;
+                } else {
+                    self::_cache->cas(casToken, this->_key, value);
+                    let this->_isLocked = true;
+                }
             }
-            let n++;
-        }
+        }  while self::_cache->getResultCode() != \Memcached::RES_SUCCESS;
         return this->_isLocked;
     }
 

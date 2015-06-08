@@ -165,7 +165,7 @@ class Collection
 		}
 	}
 
-	private function appendQuery(array! query = null)
+	private function appendQuery(array! query = null) -> array
     {
         if empty query {
             let query = [];
@@ -400,16 +400,19 @@ class Collection
         return false;
     }
 
-    public function find(array! query = null, array! fields = [])
+    public function find(array! query = [], array! fields = []) -> <\MongoCursor>
     {
-        //var rst;
         let fields = empty(fields) ? [] : fields;
         let query = this->appendQuery(query);
-        return this->_collection->find(query);
-        //return rst;
+        var cursor;
+        let cursor = this->_collection->find(query,fields);
+        if unlikely cursor->valid() == false {
+            throw new \Exception("invalid cursor");
+        } 
+        return cursor;
     }
 
-    public function findOne(array! query = null, array! fields = [])
+    public function findOne(array! query = [], array! fields = [])
     {
         var rst;
         let fields = empty(fields) ? [] : fields;
@@ -661,7 +664,7 @@ class Collection
         return rst;
     }
 
-    public function update(criteria, obj, array options = null)
+    public function update(criteria, obj, array options = null,int count = 0)
     {
         if !is_array(criteria) {
             throw new \Exception("criteria is array");
@@ -674,7 +677,13 @@ class Collection
         var objlock;
         let objlock = new \My\Utils\Lock(md5(this->_collectionName.this->_databaseName.this->_clusterName."update".serialize(criteria).serialize(obj).serialize(options)));
         if objlock->lock() {
-            return false;
+            if count < 3 {
+                usleep(50000);//重试三次每次间歇50毫秒
+                let count++;
+                return this->update(criteria, obj, options, count);
+            } else {
+                return false;
+            }
         }
         
         var key,keys,defaultOptions;
