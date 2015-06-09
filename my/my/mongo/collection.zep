@@ -186,10 +186,10 @@ class Collection
         if ! empty intersect {
             let query = [
                 "$and" : [
+                    query,
                     [
                         "__REMOVED__" : false
-                    ],
-                    query
+                    ]
                 ]
             ];
         } else {
@@ -390,7 +390,7 @@ class Collection
     {
         var indexes,index;
         let indexes = this->_collection->getIndexInfo();
-        if ! empty(indexes) && is_array(indexes) {
+        if ! empty indexes && is_array(indexes) {
             for index in indexes {
                 if index["key"] == keys {
                     return true;
@@ -402,11 +402,33 @@ class Collection
 
     public function find(array! query = [], array! fields = []) -> <\MongoCursor>
     {
-        let fields = empty(fields) ? [] : fields;
-        let query = this->appendQuery(query);
         var cursor;
-        let cursor = this->_collection->find(query,fields);
-        if unlikely cursor->valid() == false {
+        let query = this->appendQuery(query);
+        if typeof query != "array" {
+            throw new Exception("Find parameters must be an array");
+        }
+
+        if empty fields {
+            let cursor = this->_collection->find(query);
+        } else {
+            let cursor = this->_collection->find(query,fields);
+        }
+        if !(cursor instanceof \MongoCursor) {
+            throw new \Exception("cursor is not \MongoCursor");
+        }
+
+        if !(cursor instanceof \Traversable) {
+           throw new \Exception("cursor is not \Traversable");     
+        }
+        if unlikely cursor->valid() === false {
+            // var_dump(cursor);
+            // var_dump(cursor->count());
+            // var_dump(iterator_to_array(cursor,false));
+            // var_dump(cursor->valid());
+            // var_dump(cursor->info());
+            // var_dump(this->_collection);
+            // var_dump(query, typeof query);
+            // var_dump(fields, typeof fields);
             throw new \Exception("invalid cursor");
         } 
         return cursor;
@@ -415,7 +437,7 @@ class Collection
     public function findOne(array! query = [], array! fields = [])
     {
         var rst;
-        let fields = empty(fields) ? [] : fields;
+        let fields = empty fields  ? [] : fields;
         let query = this->appendQuery(query);
         let rst = this->_collection->findOne(query,fields);
         return rst;
@@ -423,9 +445,10 @@ class Collection
 
     public function findAll(array! query = [], array! sort = ["_id":1], int skip = 0, int limit = 0, array! fields = []) -> array
     {
-        let fields = empty(fields) ? [] : fields;
+        let query = this->appendQuery(query);
+        let fields = empty fields ? [] : fields;
         var cursor;
-        let cursor = this->find(query, fields);
+        let cursor = this->_collection->find(query, fields);
         if !(cursor instanceof \MongoCursor) {
             throw new \Exception("query error:" . json_encode(query));
         }
@@ -514,7 +537,7 @@ class Collection
 
     public function insert(array! a, array! options = null)
     {
-        if empty(a) {
+        if empty a {
             throw new \Exception("object is null");
         }
         

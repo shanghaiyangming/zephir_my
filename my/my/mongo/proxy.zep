@@ -1,6 +1,6 @@
 namespace My\Mongo;
 
-class Router
+class Proxy
 {
 	public function __construct() {
 
