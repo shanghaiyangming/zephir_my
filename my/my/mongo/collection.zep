@@ -408,11 +408,17 @@ class Collection
             throw new Exception("Find parameters must be an array");
         }
 
-        if empty fields {
-            let cursor = this->_collection->find(query);
-        } else {
-            let cursor = this->_collection->find(query,fields);
+        //zephir生成变量是的递归错误
+        var fieldsSetting;
+        let fieldsSetting = [];
+        if !empty fields {
+            var k,v;
+            for k,v in fields {
+                let fieldsSetting[k] = is_bool(v) ? v : true;
+            }
         }
+        let cursor = this->_collection->find(query,fieldsSetting);
+        
         if !(cursor instanceof \MongoCursor) {
             throw new \Exception("cursor is not \MongoCursor");
         }
@@ -420,17 +426,7 @@ class Collection
         if !(cursor instanceof \Traversable) {
            throw new \Exception("cursor is not \Traversable");     
         }
-        if unlikely cursor->valid() === false {
-            // var_dump(cursor);
-            // var_dump(cursor->count());
-            // var_dump(iterator_to_array(cursor,false));
-            // var_dump(cursor->valid());
-            // var_dump(cursor->info());
-            // var_dump(this->_collection);
-            // var_dump(query, typeof query);
-            // var_dump(fields, typeof fields);
-            throw new \Exception("invalid cursor");
-        } 
+
         return cursor;
     }
 
@@ -882,8 +878,8 @@ class Collection
         }
         
         let metadata = array_merge(metadata, _FILES[fieldName]);
-        let finfo = new \finfo(FILEINFO_MIME);
-        let mime = finfo->file(_FILES[fieldName]["tmp_name"]);
+        let finfo = finfo_open(FILEINFO_MIME);
+        let mime = finfo_file(finfo, _FILES[fieldName]["tmp_name"]);
         if mime !== false {
             let metadata["mime"] = mime;
         }
@@ -911,8 +907,8 @@ class Collection
             let metadata["filename"] = filename;
         }
         
-        let finfo = new \finfo(FILEINFO_MIME);
-        let mime = finfo->buffer(bytes);
+        let finfo = finfo_open(FILEINFO_MIME);
+        let mime = finfo_buffer(finfo,bytes);
         if mime !== false {
             let metadata["mime"] = mime;
         }
@@ -977,17 +973,16 @@ class Collection
      * @param string id            
      * @return array 文件信息数组
      */
-    public function getInfoFromGridFS(id)
+    public function getInfoFromGridFS(id) -> array
     {
-        var gridfsFile;
+        
         if !(id instanceof \MongoId) {
             let id = new \MongoId(id);
         }
         this->initGridFS();
+        var gridfsFile;
         let gridfsFile = this->_fs->get(id);
-        var rst;
-        let rst = gridfsFile->file;
-        return rst;
+        return gridfsFile->file;
     }
 
     /**
@@ -998,16 +993,14 @@ class Collection
      */
     public function getFileFromGridFS(id)
     {
-        var gridfsFile;
         if !(id instanceof \MongoId) {
             let id = new \MongoId(id);
         }
         this->initGridFS();
+        var gridfsFile;
         let gridfsFile = this->_fs->get(id);
         if gridfsFile instanceof \MongoGridFSFile {
-            var rst;
-            let rst = gridfsFile->getBytes();
-            return rst;
+            return gridfsFile->getBytes();
         } else {
             return false;
         }
