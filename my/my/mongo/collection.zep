@@ -2,26 +2,26 @@ namespace My\Mongo;
 
 class Collection
 {
-	private _client = null;
+    private _client = null;
 
-	private _collection {
-		set, get
-	};
+    private _collection {
+        set, get
+    };
 
     private _collectionName {
-    	set, get
+        set, get
     };
 
     private _databaseName = "ICCv1" {
-    	set, get
+        set, get
     };
 
     private _clusterName = "defaultOptions" {
-    	set, get
+        set, get
     };
 
     private _collectionOptions = [] {
-    	set, get
+        set, get
     };
 
     private _db = null;
@@ -35,15 +35,15 @@ class Collection
     private _fs = null;
 
     private _queryHaystack = [
-		"$and",
-		"$or",
-		"$nor",
-		"$not",
-		"$where"
-	];
+        "$and",
+        "$or",
+        "$nor",
+        "$not",
+        "$where"
+    ];
 
     private _updateHaystack = [
-    	"$set",
+        "$set",
         "$inc",
         "$unset",
         "$rename",
@@ -62,7 +62,7 @@ class Collection
     ];
 
     private _noAppendQuery = false {
-    	set,get
+        set,get
     };
 
     const TIMEOUT = 6000000;
@@ -82,90 +82,90 @@ class Collection
     const DB_MAPREDUCE = "mapreduce";
 
 
-	public function __construct(string! collectionName, string! databaseName = null, string! clusterName = null, array! collectionOptions = null) {
-		let this->_collectionName = collectionName;
-		let this->_databaseName = empty databaseName ? "ICCv1" : databaseName;
-		let this->_clusterName = empty clusterName ? "defaultOptions" : clusterName;
-		let this->_collectionOptions = empty collectionOptions ? [] : collectionOptions;
-	}
+    public function __construct(string! collectionName, string! databaseName = null, string! clusterName = null, array! collectionOptions = null) {
+        let this->_collectionName = collectionName;
+        let this->_databaseName = empty databaseName ? "ICCv1" : databaseName;
+        let this->_clusterName = empty clusterName ? "defaultOptions" : clusterName;
+        let this->_collectionOptions = empty collectionOptions ? [] : collectionOptions;
+    }
 
-	public function setMongoClient(<\MongoClient> client) -> boolean
-	{
-		let this->_client = client;
-		this->initCollection();
-		return true;
-	}
+    public function setMongoClient(<\MongoClient> client) -> boolean
+    {
+        let this->_client = client;
+        this->initCollection();
+        return true;
+    }
 
-	public function getMongoClient() -> <\MongoClient> 
-	{
-		return this->_client;
-	}
+    public function getMongoClient() -> <\MongoClient> 
+    {
+        return this->_client;
+    }
 
-	private function initCollection() -> <\MongoCollection>
-	{
-		this->initDB();
-		let this->_collection = this->_client->selectCollection(this->_databaseName,this->_collectionName);
-		return this->_collection;
-	}
+    private function initCollection() -> <\MongoCollection>
+    {
+        this->initDB();
+        let this->_collection = this->_client->selectCollection(this->_databaseName,this->_collectionName);
+        return this->_collection;
+    }
 
-	private function initDB() -> void
-	{
-		if empty this->_client  {
-			throw new \Exception("please invoke method setMongoClient before initDB");
-		} 
-		let this->_db = this->_client->selectDB(this->_databaseName);
-	}
+    private function initDB() -> void
+    {
+        if empty this->_client  {
+            throw new \Exception("please invoke method setMongoClient before initDB");
+        } 
+        let this->_db = this->_client->selectDB(this->_databaseName);
+    }
 
-	private function initAdmin() -> void
-	{
-		if empty this->_client  {
-			throw new \Exception("please invoke method setMongoClient before initAdmin");
-		} 
+    private function initAdmin() -> void
+    {
+        if empty this->_client  {
+            throw new \Exception("please invoke method setMongoClient before initAdmin");
+        } 
 
-		if empty this->_admin {
-			let this->_admin = this->_client->selectDB("admin");
-		}
-	}
+        if empty this->_admin {
+            let this->_admin = this->_client->selectDB("admin");
+        }
+    }
 
-	private function initBackup() -> void
-	{
-		if empty this->_client  {
-			throw new \Exception("please invoke method setMongoClient before initBackup");
-		} 
+    private function initBackup() -> void
+    {
+        if empty this->_client  {
+            throw new \Exception("please invoke method setMongoClient before initBackup");
+        } 
 
-		if empty this->_backup {
-			let this->_backup = this->_client->selectDB("backup");
-		}
-	}
+        if empty this->_backup {
+            let this->_backup = this->_client->selectDB("backup");
+        }
+    }
 
-	private function initMapreduce() -> void
-	{
-		if empty this->_client  {
-			throw new \Exception("please invoke method setMongoClient before initMapreduce");
-		} 
+    private function initMapreduce() -> void
+    {
+        if empty this->_client  {
+            throw new \Exception("please invoke method setMongoClient before initMapreduce");
+        } 
 
-		if empty this->_mapreduce {
-			let this->_mapreduce = this->_client->selectDB("mapreduce");
-		}
-	}
+        if empty this->_mapreduce {
+            let this->_mapreduce = this->_client->selectDB("mapreduce");
+        }
+    }
 
-	private function initGridFs()  -> void
-	{
-		if empty this->_client  {
-			throw new \Exception("please invoke method setMongoClient before init");
-		} 
-		if empty this->_db  {
-			throw new \Exception("please invoke method initdb before initGridFs");
-		} 
+    private function initGridFs()  -> void
+    {
+        if empty this->_client  {
+            throw new \Exception("please invoke method setMongoClient before init");
+        } 
+        if empty this->_db  {
+            throw new \Exception("please invoke method initdb before initGridFs");
+        } 
 
-		if empty this->_fs {
-			if class_exists("\MongoGridFS") {
-				let this->_fs = new \MongoGridFS(this->_db, self::GRIDFS_PREFIX);
-			};
-		}
-	}
+        if empty this->_fs {
+            if class_exists("\MongoGridFS") {
+                let this->_fs = new \MongoGridFS(this->_db, self::GRIDFS_PREFIX);
+            };
+        }
+    }
 
-	private function appendQuery(array! query = null) -> array
+    private function appendQuery(array! query = null) -> array
     {
         if empty query {
             let query = [];
@@ -179,8 +179,8 @@ class Collection
         array intersect = [];
 
         if typeof query == "array" {
-        	let keys = (array) array_keys(query);
-        	let intersect = (array) array_intersect(keys, this->_queryHaystack);
+            let keys = (array) array_keys(query);
+            let intersect = (array) array_intersect(keys, this->_queryHaystack);
         }
 
         if ! empty intersect {
@@ -201,22 +201,22 @@ class Collection
     private function checkKeyExistInArray(array! arr, keys) -> boolean
     {
         if typeof keys == "string" {
-        	let keys = [keys];
+            let keys = [keys];
         }
 
         var key;
         var items;
         for key, items in arr {
 
-        	if in_array(key, keys, true) {
-        		return true;
-        	}
+            if in_array(key, keys, true) {
+                return true;
+            }
 
-        	if typeof items == "array" {
-        		if this->checkKeyExistInArray(items, keys) {
-        			return true;
-        		}
-        	} 
+            if typeof items == "array" {
+                if this->checkKeyExistInArray(items, keys) {
+                    return true;
+                }
+            } 
         }
 
         return false;
@@ -225,7 +225,7 @@ class Collection
     private function addSharedKeyToQuery(array query = null) -> array
     {
         if typeof query != "array" {
-        	 throw new \Exception("query must be array");
+             throw new \Exception("query must be array");
         };
         
         if (this->checkKeyExistInArray(query, "_id")) {
