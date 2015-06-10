@@ -67,6 +67,10 @@ class Collection
 
     const TIMEOUT = 6000000;
 
+    const USLEEP = 50000;
+
+    const RETRY = 3;
+
     const FSYNC = false;
 
     const UPSERT = false;
@@ -258,9 +262,9 @@ class Collection
         return new \MongoRegex("/" . preg_replace("/[\s\r\t\n]/", ".*", text) . "/i");
     }
 
-    public function aggregate(pipeline)
+    public function aggregate(array! pipeline)
     {
-        if empty this->_noAppendQuery {
+        if !this->_noAppendQuery {
             if isset pipeline[0]["$geoNear"] {
                 var first;
                 let first = array_shift(pipeline);
@@ -271,8 +275,9 @@ class Collection
                 ]);
                 array_unshift(pipeline, first);
             } elseif isset pipeline[0]["$match"] {
-                // 解决率先执行match:{__REMOVED__:false}导致的性能问题
-                let pipeline[0]["match"] = this->appendQuery(pipeline[0]["$match"]);
+                var firstMatch;
+                let firstMatch = pipeline[0]["$match"];
+                let pipeline[0]["$match"] = this->appendQuery(firstMatch);
             } else {
                 array_unshift(pipeline, [
                     "$match" : [
@@ -282,36 +287,43 @@ class Collection
             }
         }
         
-        var rst;
-        let rst = this->_collection->aggregate(pipeline);
-        return rst;
+        if typeof pipeline != "array" {
+            throw new \Exception("pipeline must be an array");
+        }
+
+        return this->_collection->aggregate(pipeline);
+
     }
 
-    public function aggregateCursor(array! pipeline =[] , array! options = []) -> <\MongoCommandCursor>
+    public function aggregateCursor(array! command , array! options = []) -> <\MongoCommandCursor>
     {
-        if empty this->_noAppendQuery {
-            if isset pipeline[0]["$geoNear"] {
+        if !this->_noAppendQuery {
+            if isset command[0]["$geoNear"] {
                 var first;
-                let first = array_shift(pipeline);
-                array_unshift(pipeline, [
+                let first = array_shift(command);
+                array_unshift(command, [
                     "$match" : [
                         "__REMOVED__" : false
                     ]
                 ]);
-                array_unshift(pipeline, first);
-            } elseif isset pipeline[0]["$match"] {
-                // 解决率先执行match:{__REMOVED__:false}导致的性能问题
-                let pipeline[0]["match"] = this->appendQuery(pipeline[0]["$match"]);
+                array_unshift(command, first);
+            } elseif isset command[0]["$match"] {
+                var firstMatch;
+                let firstMatch = command[0]["$match"];
+                let command[0]["$match"] = this->appendQuery(firstMatch);
             } else {
-                array_unshift(pipeline, [
+                array_unshift(command, [
                     "$match" : [
                         "__REMOVED__" : false
                     ]
                 ]);
             }
         }
-        
-        return this->_collection->aggregateCursor(pipeline, options);
+
+        if typeof command != "array" {
+            throw new \Exception("pipeline must be an array");
+        }
+        return this->_collection->aggregateCursor(command, options);
 
     }
 
@@ -324,9 +336,7 @@ class Collection
             let row["__REMOVED__"] = false;
         };
 
-        var rst;
-        let rst = this->_collection->batchInsert(documents, options);
-        return rst;
+        return this->_collection->batchInsert(documents, options);
     }
 
     public function count(array! query = null, limit = null, skip = null)
@@ -497,8 +507,32 @@ class Collection
         return [];
     }
 
-    public function findAndModify(array! query, array! update = null, array! fields = null, array! options = null)
+    public function findAndModify(array! query, array! update = null, array! fields = null, array! options = null, int count=0)
     {
+        //加锁
+        var objlock;
+        var arrKey,strKey;
+        let arrKey = [];
+        let arrKey[] = this->_collectionName;
+        let arrKey[] = this->_databaseName;
+        let arrKey[] = this->_clusterName;
+        let arrKey[] = "findAndModify";
+        let arrKey[] = query;
+        let arrKey[] = update;
+        let arrKey[] = fields;
+        let arrKey[] = options;
+        let strKey = md5(serialize(arrKey));
+        let objlock = new \My\Utils\Lock(strKey);
+        if unlikely objlock->lock() == true {
+            if count < self::RETRY {
+                usleep(self::USLEEP);
+                let count++;
+                return this->findAndModify(query, update, fields, options, count);
+            } else {
+                return this->failure(599,"current op is locked,please wait.");
+            }
+        }
+
         let query = this->appendQuery(query);
         if this->_collection->count(query) == 0 && !empty options["upsert"] {
             let query = this->addSharedKeyToQuery(query);
@@ -721,14 +755,24 @@ class Collection
         }
 
         var objlock;
-        let objlock = new \My\Utils\Lock(md5(this->_collectionName.this->_databaseName.this->_clusterName."update".serialize(criteria).serialize(obj).serialize(options)));
-        if objlock->lock() {
-            if count < 3 {
-                usleep(50000);//重试三次每次间歇50毫秒
+        var arrKey,strKey;
+        let arrKey = [];
+        let arrKey[] = this->_collectionName;
+        let arrKey[] = this->_databaseName;
+        let arrKey[] = this->_clusterName;
+        let arrKey[] = "update";
+        let arrKey[] = criteria;
+        let arrKey[] = obj;
+        let arrKey[] = options;
+        let strKey = md5(serialize(arrKey));
+        let objlock = new \My\Utils\Lock(strKey);
+        if unlikely objlock->lock() == true {
+            if count < self::RETRY {
+                usleep(self::USLEEP);
                 let count++;
                 return this->update(criteria, obj, options, count);
             } else {
-                return false;
+                return this->failure(599,"current op is locked,please wait.");
             }
         }
         
@@ -809,7 +853,8 @@ class Collection
         return rst;
     }
 
-    private function failure(int! code, string! msg) {
+    private function failure(int! code, string! msg) -> array
+    {
         if is_array(msg) {
            let msg = json_encode(msg);
         }
@@ -833,8 +878,7 @@ class Collection
 
         let objlock = new \My\Utils\Lock(out);
         if objlock->lock() {
-            let rst = this->failure(599, "current op is locked,please wait.");
-            return rst;
+            return this->failure(599,"current op is locked,please wait.");
         }
     
         // map reduce执行锁管理结束
@@ -888,8 +932,7 @@ class Collection
             outMongoCollection->setNoAppendQuery(true);
             return outMongoCollection;
         } else {
-            let rst = this->failure(501, rst);
-            return rst;
+            return this->failure(501, rst);
         }
     }
 
