@@ -16,7 +16,7 @@ class Collection
         set, get
     };
 
-    private _clusterName = "defaultOptions" {
+    private _clusterName = "default" {
         set, get
     };
 
@@ -65,8 +65,6 @@ class Collection
         set,get
     };
 
-    const TIMEOUT = 6000000;
-
     const USLEEP = 50000;
 
     const RETRY = 3;
@@ -91,6 +89,11 @@ class Collection
         let this->_databaseName = empty databaseName ? "ICCv1" : databaseName;
         let this->_clusterName = empty clusterName ? "defaultOptions" : clusterName;
         let this->_collectionOptions = empty collectionOptions ? [] : collectionOptions;
+
+        if unlikely \My\Utils\Registry::isRegistered("my_mongodb_config") == true {
+            this->setMongoClient(Client::init(\My\Utils\Registry::get("my_mongodb_config")));
+        }
+        
     }
 
     public function setMongoClient(<\MongoClient> client) -> boolean
@@ -509,7 +512,6 @@ class Collection
 
     public function findAndModify(array! query, array! update = null, array! fields = null, array! options = null, int count=0)
     {
-        //加锁
         var objlock;
         var arrKey,strKey;
         let arrKey = [];
@@ -923,7 +925,6 @@ class Collection
             ], true) ? true : false
         ];
         
-        //this->_collection->db->setReadPreference(\MongoClient::RP_SECONDARY);
         let rst = this->_collection->db->command(command);
         
         if isset rst["ok"] && rst["ok"] == 1 {

@@ -5,13 +5,16 @@ class Client
 	/**
 	 * servers = array("127.0.0.1:57017","127.0.0.1:27017");
 	 */
-	public static function init(array! servers,array options = null) {
+	public static function init(array! servers) {
 		if empty servers {
 			throw new \Exception("please setting mongodb server information");
 		}
 
         shuffle(servers);
+        var options;
         let options = [];
+        let options["connect"] = false;
+
         string dnsString = "";
         let dnsString =  (string) join(",", servers);
         var connect;
