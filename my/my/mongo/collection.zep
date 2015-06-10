@@ -285,6 +285,33 @@ class Collection
         var rst;
         let rst = this->_collection->aggregate(pipeline);
         return rst;
+    }
+
+    public function aggregateCursor(array! pipeline =[] , array! options = []) -> <\MongoCommandCursor>
+    {
+        if empty this->_noAppendQuery {
+            if isset pipeline[0]["$geoNear"] {
+                var first;
+                let first = array_shift(pipeline);
+                array_unshift(pipeline, [
+                    "$match" : [
+                        "__REMOVED__" : false
+                    ]
+                ]);
+                array_unshift(pipeline, first);
+            } elseif isset pipeline[0]["$match"] {
+                // 解决率先执行match:{__REMOVED__:false}导致的性能问题
+                let pipeline[0]["match"] = this->appendQuery(pipeline[0]["$match"]);
+            } else {
+                array_unshift(pipeline, [
+                    "$match" : [
+                        "__REMOVED__" : false
+                    ]
+                ]);
+            }
+        }
+        
+        return this->_collection->aggregateCursor(pipeline, options);
 
     }
 
@@ -1057,7 +1084,7 @@ class Collection
     /**
      * 打印最后一个错误信息
      */
-    private function debug()
+    public function debug()
     {
         if this->_db instanceof \MongoDB {
             var err;
