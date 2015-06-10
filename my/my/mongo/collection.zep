@@ -2,6 +2,10 @@ namespace My\Mongo;
 
 class Collection
 {
+    public gridfs_prefix = "my_" {
+        set, get
+    };
+
     private _client = null;
 
     private _collection {
@@ -12,11 +16,7 @@ class Collection
         set, get
     };
 
-    private _databaseName = "ICCv1" {
-        set, get
-    };
-
-    private _clusterName = "default" {
+    private _databaseName = "my" {
         set, get
     };
 
@@ -79,15 +79,12 @@ class Collection
 
     const DEBUG = false;
 
-    const GRIDFS_PREFIX = "icc_";
-
     const DB_MAPREDUCE = "mapreduce";
 
 
-    public function __construct(string! collectionName, string! databaseName = null, string! clusterName = null, array! collectionOptions = null) {
+    public function __construct(string! collectionName, string! databaseName = null, array! collectionOptions = null) {
         let this->_collectionName = collectionName;
-        let this->_databaseName = empty databaseName ? "ICCv1" : databaseName;
-        let this->_clusterName = empty clusterName ? "defaultOptions" : clusterName;
+        let this->_databaseName = empty databaseName ? "my" : databaseName;
         let this->_collectionOptions = empty collectionOptions ? [] : collectionOptions;
 
         if unlikely \My\Utils\Registry::isRegistered("my_mongodb_config") == true {
@@ -167,7 +164,7 @@ class Collection
 
         if empty this->_fs {
             if class_exists("\MongoGridFS") {
-                let this->_fs = new \MongoGridFS(this->_db, self::GRIDFS_PREFIX);
+                let this->_fs = new \MongoGridFS(this->_db, this->gridfs_prefix);
             };
         }
     }
@@ -517,7 +514,6 @@ class Collection
         let arrKey = [];
         let arrKey[] = this->_collectionName;
         let arrKey[] = this->_databaseName;
-        let arrKey[] = this->_clusterName;
         let arrKey[] = "findAndModify";
         let arrKey[] = query;
         let arrKey[] = update;
@@ -761,7 +757,6 @@ class Collection
         let arrKey = [];
         let arrKey[] = this->_collectionName;
         let arrKey[] = this->_databaseName;
-        let arrKey[] = this->_clusterName;
         let arrKey[] = "update";
         let arrKey[] = criteria;
         let arrKey[] = obj;
@@ -928,7 +923,7 @@ class Collection
         let rst = this->_collection->db->command(command);
         
         if isset rst["ok"] && rst["ok"] == 1 {
-            let outMongoCollection = new self(out, self::DB_MAPREDUCE, this->_clusterName);
+            let outMongoCollection = new self(out, self::DB_MAPREDUCE);
             outMongoCollection->setMongoClient(this->_client);
             outMongoCollection->setNoAppendQuery(true);
             return outMongoCollection;
