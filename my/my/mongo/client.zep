@@ -6,7 +6,8 @@ class Client
 	 * servers = array("127.0.0.1:57017","127.0.0.1:27017");
      * servers = "mongodb://127.0.0.1:27017"
 	 */
-	public static function init(dns = null) {
+	public static function init(dns = null,boolean cluster = true) -> <\MongoClient>
+    {
         if !class_exists("\MongoClient") {
             throw new \Exception("please install php_mongodb 1.4+");
         }
@@ -17,7 +18,7 @@ class Client
             shuffle(dns);
             string dnsString = "";
             let dnsString = "mongodb://".join(",", dns);
-        } elseif is_string(dns) {
+        } elseif is_string(dns) && strpos(dns,"mongodb://")===0 {
             let dnsString = dns;
         } else {
             let dnsString = "mongodb://127.0.0.1:27017";
@@ -29,12 +30,14 @@ class Client
 
         var connect;
         let connect = new \MongoClient(dnsString, options);
-        string readPreference = "";
-        let readPreference = \MongoClient::RP_PRIMARY_PREFERRED;
-        if connect instanceof \MongoClient {
-            connect->{"setReadPreference"}(readPreference); 
-        }
 
+        if cluster {
+            string readPreference = "";
+            let readPreference = \MongoClient::RP_PRIMARY_PREFERRED;
+            if connect instanceof \MongoClient {
+                connect->{"setReadPreference"}(readPreference); 
+            }
+        }
 
         return connect;
 	}

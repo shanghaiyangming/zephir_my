@@ -54,8 +54,8 @@
     "namespace": "my",
     "name": "my",
     "description": "My liberary compiled by zephir",
-    "author": "Young<shanghaiyangming@gmail.com>",
-    "version": "0.0.1",
+    "author": "Young <shanghaiyangming@gmail.com>",
+    "version": "0.1.0",
     "verbose": false,
     "requires": {
         "extensions": []
@@ -70,7 +70,8 @@
         {
             "header": ["Directive", "Value"],
             "rows": [
-                ["my.utils.lock.memcached", "tcp://127.0.0.1:11211/?weight=20"]
+                ["my.utils.lock.memcached", "tcp://127.0.0.1:11211/?weight=20"],
+                ["my.mongo.client", "mongodb://127.0.0.1:27017/"]
             ]
         }
     ]

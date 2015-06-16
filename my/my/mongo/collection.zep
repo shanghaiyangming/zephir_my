@@ -178,7 +178,7 @@ class Collection
         if this->_noAppendQuery {
             return query;
         }
-
+        
         array keys = [];
         array intersect = [];
 
@@ -187,8 +187,10 @@ class Collection
             let intersect = (array) array_intersect(keys, this->_queryHaystack);
         }
 
-        if ! empty intersect {
-            let query = [
+        if !empty intersect {
+            var newQuery;
+            let newQuery = [];
+            let newQuery = [
                 "$and" : [
                     query,
                     [
@@ -196,6 +198,7 @@ class Collection
                     ]
                 ]
             ];
+            return newQuery;
         } else {
             let query["__REMOVED__"] = false;
         }
@@ -442,7 +445,7 @@ class Collection
         var cursor;
         let query = this->appendQuery(query);
         if typeof query != "array" {
-            throw new Exception("Find parameters must be an array");
+            throw new \Exception("Find parameters must be an array");
         }
 
         //zephir生成变量是的递归错误
@@ -463,7 +466,6 @@ class Collection
         if !(cursor instanceof \Traversable) {
            throw new \Exception("cursor is not \Traversable");     
         }
-
         return cursor;
     }
 
