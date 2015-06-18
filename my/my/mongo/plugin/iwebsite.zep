@@ -191,13 +191,12 @@ class Iwebsite
     {
     	var key,value;
         for key,value in arr {
-        	if is_array(value) {
-                let arr[key] = this->toArray(value);
-            }
-            elseif (key === "_id" && strlen(value) === 24) {
+            if key === "_id" && strlen(value) === 24 {
                 if !(value instanceof \MongoId) {
                 	let arr[key] = new \MongoId(value);
                 }       
+            } elseif is_array(value) {
+                let arr[key] = this->toArray(value);
             }
         }
         return arr;

@@ -77,9 +77,37 @@ class Cache
 		return self::_cache->set(key, value, expire);
 	}
 
+	public function pushItemCas(string! key, value) -> boolean
+	{
+		var casToken,cacheValue;
+        let casToken = microtime(true);
+        do {
+        	let cacheValue = self::_cache->get(key, null, casToken);
+        	if is_array(cacheValue) {
+	        	if in_array(value,cacheValue,true) {
+	        		break;
+	        	}
+	        }
+        	if self::_cache->getResultCode() == \Memcached::RES_NOTFOUND {
+        		let cacheValue = [];
+        		let cacheValue[] = value;
+                self::_cache->add(key, cacheValue);
+            } else {
+            	let cacheValue[] = value;
+                self::_cache->cas(casToken, key, cacheValue);
+            }
+        }  while self::_cache->getResultCode() != \Memcached::RES_SUCCESS;
+        return true;
+	}
+
 	public function remove(string! key) -> boolean
 	{
 		return self::_cache->delete(key);
+	}
+
+	public function removeAll(array arr) ->boolean 
+	{
+		return self::_cache->deleteMulti(arr);
 	}
 
 }

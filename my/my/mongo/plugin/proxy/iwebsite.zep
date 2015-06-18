@@ -1,6 +1,6 @@
-namespace My\Mongo;
+namespace My\Mongo\Plugin\Proxy;
 
-class Proxy
+class Iwebsite
 {
 	private _model = null;
 
@@ -8,9 +8,9 @@ class Proxy
 
 	private _queryCache = false;
 
-	private _cachePrefix = "my_mongo_query_cache_";
+	private _cachePrefix = "my_mongo_iwebsite_query_cache_";
 
-	private _cacheOpList = ["findOne","findAll"];
+	private _cacheOpList = ["find","findOne","findAll"];
 
 	private _clearOpList = ["findAndModify","findAndModifyByCommand","save","saveRef","remove","physicalRemove","update","physicalUpdate","insert","insertRef","insertByFindAndModify","batchInsert","drop","physicalDrop"];
 
@@ -18,11 +18,16 @@ class Proxy
 
 	const EXPIRE = 60;
 
-	public function __construct(string! collectionName, string! databaseName = null, array! collectionOptions = null) {
+	public function __construct() {
 		let this->_cache = new \My\Utils\Cache();
-		let this->_model = new Collection(collectionName, databaseName, collectionOptions);
-		let this->_cacheContainer = this->_cachePrefix . collectionName . databaseName;
+		let this->_model = new \My\Mongo\Plugin\Iwebsite();
 	}
+
+	public function setCollection(string! collectionAlias = null) -> boolean
+    {
+    	let this->_cacheContainer = this->_cachePrefix . this->_model->_project_id . collectionAlias;
+        return this->_model->setCollection(collectionAlias);
+    }
 
 	public function setQueryCache(boolean flag = false) -> void
 	{

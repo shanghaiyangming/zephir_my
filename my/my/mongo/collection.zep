@@ -1140,10 +1140,9 @@ class Collection
         return rst;
     }
 
-    /**
-     * 在析构函数中调用debug方法
-     */
     public function __destruct()
-    {}
+    {
+        
+    }
 
 }

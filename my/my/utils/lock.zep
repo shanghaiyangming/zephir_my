@@ -102,17 +102,17 @@ class Lock
         let now = time();
         let expireTime = now + this->_expire;
         do {
-        	let value = self::_cache->get($this->_key, null, casToken);
+        	let value = self::_cache->get(this->_key, null, casToken);
         	if (self::_cache->getResultCode() == \Memcached::RES_NOTFOUND) {
                 self::_cache->add(this->_key, expireTime, expireTime);
                 let this->_isLocked = false;
             } else {
-                if now > value {
+                 if now > value {
                     self::_cache->delete(this->_key);
                     self::_cache->add(this->_key, expireTime, expireTime);
                     let this->_isLocked = false;
                 } else {
-                    self::_cache->cas(casToken, this->_key, value);
+                    self::_cache->cas(casToken, this->_key, value, value);
                     let this->_isLocked = true;
                 }
             }
